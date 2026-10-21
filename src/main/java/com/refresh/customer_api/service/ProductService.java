@@ -2,6 +2,7 @@ package com.refresh.customer_api.service;
 
 import com.refresh.customer_api.dto.ProductResponse;
 import com.refresh.customer_api.dto.ProductSelectorResponse;
+import com.refresh.customer_api.exception.ResourceNotFoundException;
 import com.refresh.customer_api.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -24,9 +25,10 @@ public class ProductService {
                 .map(ProductResponse::from);
     }
 
-    public Optional<ProductResponse> findById(Integer id) {
+    public ProductResponse findById(Integer id) {
         return productRepository.findById(id)
-                .map(ProductResponse::from);
+                .map(ProductResponse::from)
+                .orElseThrow(() -> new ResourceNotFoundException("Product",id));
     }
 
     public List<ProductSelectorResponse> getAllWithQuery(){

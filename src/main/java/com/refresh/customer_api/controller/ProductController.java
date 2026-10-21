@@ -25,10 +25,8 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ProductResponse> get(@PathVariable Integer id) {
-        return productService.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ProductResponse get(@PathVariable Integer id) {
+        return productService.findById(id);
     }
     @GetMapping("/select")
     public List<ProductSelectorResponse> list(){
