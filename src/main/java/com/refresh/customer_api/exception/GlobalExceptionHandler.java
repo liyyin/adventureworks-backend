@@ -49,7 +49,7 @@ public class GlobalExceptionHandler {
                                                           HttpServletRequest request) {
         log.error("Unexpected error at {}", request.getRequestURI(), ex);
         return build(HttpStatus.INTERNAL_SERVER_ERROR,
-                "Terjadi kesalahan pada server", request);
+                ex.getMessage(), request);
     }
 
     private ResponseEntity<ErrorResponse> build(HttpStatus status, String message, HttpServletRequest request){

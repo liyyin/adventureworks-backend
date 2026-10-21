@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -22,6 +23,11 @@ public class ProductService {
 
     public Page<ProductResponse> search(String name, Pageable pageable) {
         return productRepository.findByNameContainingIgnoreCase(name, pageable)
+                .map(ProductResponse::from);
+    }
+
+    public Page<ProductResponse> searchManualQuery(String keyword,Pageable pageable){
+        return productRepository.searchByKeyWordNative(keyword,pageable)
                 .map(ProductResponse::from);
     }
 
