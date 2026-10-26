@@ -2,6 +2,7 @@ package com.refresh.customer_api.controller;
 
 import com.refresh.customer_api.dto.SalesOrderDetailResponse;
 import com.refresh.customer_api.dto.SalesOrderSummaryResponse;
+import com.refresh.customer_api.dto.SalesOrderWithCustomerResponse;
 import com.refresh.customer_api.service.SalesOrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -32,5 +33,17 @@ public class SalesOrderController {
     @GetMapping("/{id}")
     public SalesOrderDetailResponse get(@PathVariable Integer id) {
         return salesOrderService.getById(id);
+    }
+
+    @Operation(summary = "Daftar Sales order menggunakan query native dan ambil person name dan store name dari customer ID")
+    @GetMapping("/list-customer")
+    public Page<SalesOrderWithCustomerResponse> listCustomer(@ParameterObject Pageable pageable){
+        return salesOrderService.listCustomerStore(pageable);
+    }
+
+    @Operation(summary = "get list customer menggunakan JPQL")
+    @GetMapping("/list-customer-jpql")
+    public Page<SalesOrderWithCustomerResponse> listCustomerJpql(@ParameterObject Pageable pageable){
+        return salesOrderService.listCustomerJpql(pageable);
     }
 }

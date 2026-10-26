@@ -1,11 +1,16 @@
 package com.refresh.customer_api.dto;
 
+import com.refresh.customer_api.entity.Customer;
+import com.refresh.customer_api.entity.Person;
 import com.refresh.customer_api.entity.SalesOrderHeader;
-import com.refresh.customer_api.entity.SalesReason;
+import com.refresh.customer_api.entity.Store;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public record SalesOrderDetailResponse(
         Integer id,
@@ -15,6 +20,8 @@ public record SalesOrderDetailResponse(
         LocalDateTime shipDate,
         Integer status,
         Integer customerId,
+        String personName,
+        String storeName,
         BigDecimal subTotal,
         BigDecimal taxAmt,
         BigDecimal freight,
@@ -23,6 +30,9 @@ public record SalesOrderDetailResponse(
         List<String> salesReasons
 ) {
     public static SalesOrderDetailResponse from(SalesOrderHeader h,List<String> salesReasons) {
+        Customer customer = h.getCustomer();
+        Person person = customer != null ? customer.getPerson() : null;
+        Store store = customer != null ? customer.getStore() : null;
         return new SalesOrderDetailResponse(
                 h.getId(),
                 h.getSalesOrderNumber(),
@@ -31,6 +41,10 @@ public record SalesOrderDetailResponse(
                 h.getShipDate(),
                 h.getStatus(),
                 h.getCustomerId(),
+                person != null
+                        ? joinName(person.getFirstName(), person.getMiddleName(), person.getLastName())
+                        : null,
+                store != null ? store.getName() : null,
                 h.getSubTotal(),
                 h.getTaxAmt(),
                 h.getFreight(),
@@ -40,5 +54,13 @@ public record SalesOrderDetailResponse(
                         .toList(),
                 salesReasons
         );
+    }
+
+    private static String joinName(String ... parts){
+        String result = Stream.of(parts)
+                .filter(Objects::nonNull)
+                .filter(s -> !s.isBlank())
+                .collect(Collectors.joining(" "));
+        return result.isEmpty() ? null:result;
     }
 }

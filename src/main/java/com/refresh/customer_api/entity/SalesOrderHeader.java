@@ -6,9 +6,7 @@ import lombok.Getter;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @Entity
 @Table(name = "SalesOrderHeader",schema = "Sales")
@@ -34,8 +32,12 @@ public class SalesOrderHeader {
     @Column(name = "Status")
     private Integer status;
 
-    @Column(name = "CustomerID")
+    @Column(name = "CustomerID",insertable = false,updatable = false)
     private Integer customerId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "CustomerID")
+    private Customer customer;
 
     @Column(name = "SubTotal")
     private BigDecimal subTotal;
@@ -52,5 +54,6 @@ public class SalesOrderHeader {
     @OneToMany(mappedBy = "salesOrder")
     private List<SalesOrderDetail> details =new ArrayList<>();
 
-    //Many to Many ini biasa di pake kalo misalnya dua data tersebut udah masih saling berhubungan
+    // @ManyToMany hanya cocok kalau tabel penghubung isinya cuma 2 FK (tanpa qty, harga, dll).
+    // Kalau ada data di hubungannya, pakai Entity penghubung + @ManyToOne.
 }
