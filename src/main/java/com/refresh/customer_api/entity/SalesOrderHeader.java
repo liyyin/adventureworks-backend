@@ -2,6 +2,7 @@ package com.refresh.customer_api.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -11,9 +12,11 @@ import java.util.List;
 @Entity
 @Table(name = "SalesOrderHeader",schema = "Sales")
 @Getter
+@Setter
 public class SalesOrderHeader {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "SalesOrderID")
     private Integer id;
 
@@ -39,6 +42,15 @@ public class SalesOrderHeader {
     @JoinColumn(name = "CustomerID")
     private Customer customer;
 
+    @Column(name = "BillToAddressID")
+    private Integer billToAddressId;
+
+    @Column(name = "ShipToAddressID")
+    private Integer shipToAddressId;
+
+    @Column(name = "ShipMethodID")
+    private Integer shipMethodId;
+
     @Column(name = "SubTotal")
     private BigDecimal subTotal;
 
@@ -51,9 +63,14 @@ public class SalesOrderHeader {
     @Column(name = "TotalDue",insertable = false,updatable = false)
     private BigDecimal totalDue;
 
-    @OneToMany(mappedBy = "salesOrder")
+    @OneToMany(mappedBy = "salesOrder", cascade = CascadeType.ALL,orphanRemoval = true)
     private List<SalesOrderDetail> details =new ArrayList<>();
 
     // @ManyToMany hanya cocok kalau tabel penghubung isinya cuma 2 FK (tanpa qty, harga, dll).
     // Kalau ada data di hubungannya, pakai Entity penghubung + @ManyToOne.
+
+    public void addDetail(SalesOrderDetail detail) {
+        details.add(detail);
+        detail.setSalesOrder(this);
+    }
 }

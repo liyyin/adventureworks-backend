@@ -6,6 +6,7 @@ import com.refresh.customer_api.repository.projection.SalesOrderSummaryView;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -78,4 +79,12 @@ public interface SalesOrderHeaderRepository extends JpaRepository<SalesOrderHead
         """,
     countQuery = "select count(h) from SalesOrderHeader h")
     Page<SalesOrderWithCustomerResponse> findSummariesJpql(Pageable pageable);
+
+    @Modifying
+    @Query(value = """
+            INSERT INTO Sales.SalesOrderHeaderSalesReason (SalesOrderID, SalesReasonID)
+            VALUES (:salesOrderId,:salesReasonId)
+            """,nativeQuery = true)
+    void insertSalesReason(@Param("salesOrderId") Integer salesOrderId,
+                           @Param("salesReasonId") Integer salesReasonId);
 }
