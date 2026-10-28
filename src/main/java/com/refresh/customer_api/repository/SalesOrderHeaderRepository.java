@@ -10,20 +10,35 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface SalesOrderHeaderRepository extends JpaRepository<SalesOrderHeader,Integer> {
 
     // jangan lupa selalu countQuerry kalo misalnya ini ada pagianation mau native atau JPQL
     // dan kalo pake JPQL sekalu biasakan aja langsung select new DTO langsung
     @Query(value = """
-            SELECT r.Name
-            FROM Sales.SalesOrderHeaderSalesReason hr
-            JOIN Sales.SalesReason r ON r.SalesReasonID = hr.SalesReasonID
-            WHERE hr.SalesOrderID = :salesOrderId
-            ORDER BY r.Name
-           """, nativeQuery = true
+             SELECT r.Name
+             FROM Sales.SalesOrderHeaderSalesReason hr
+             JOIN Sales.SalesReason r ON r.SalesReasonID = hr.SalesReasonID
+             WHERE hr.SalesOrderID = :salesOrderId
+             ORDER BY r.Name
+            """, nativeQuery = true
     )
     List<String> findSalesReasonNames(@Param("salesOrderId") Integer salesOrderId);
+
+    @Query(
+            value = """
+                        select h
+                        from SalesOrderHeader h
+                        join fetch h.customer c
+                        left join fetch c.person p
+                        left join fetch c.store s
+                        left join fetch h.details d
+                        left join fetch d.product pr
+                        where h.id = :id
+                    """
+    )
+    Optional<SalesOrderHeader> findDetailOrderById(@Param("id")Integer id);
 
     @Query(value = """
             SELECT 

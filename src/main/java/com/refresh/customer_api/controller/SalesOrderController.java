@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.repository.query.Param;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -33,6 +34,12 @@ public class SalesOrderController {
     @GetMapping("/{id}")
     public SalesOrderDetailResponse get(@PathVariable Integer id) {
         return salesOrderService.getById(id);
+    }
+
+    @Operation(summary = "Detail Sales order meminimaliskan berapa kali select")
+    @GetMapping("/detail")
+    public SalesOrderDetailResponse getDetailByJoinFetch(@Param("id") Integer id){
+        return salesOrderService.getDetailById(id);
     }
 
     @Operation(summary = "Daftar Sales order menggunakan query native dan ambil person name dan store name dari customer ID")
