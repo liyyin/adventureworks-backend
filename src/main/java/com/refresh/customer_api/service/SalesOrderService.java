@@ -53,4 +53,6 @@ public class SalesOrderService {
     public Page<SalesOrderWithCustomerResponse> listCustomerJpql(Pageable pageable){
         return salesOrderHeaderRepository.findSummariesJpql(pageable);
     }
+
+
 }

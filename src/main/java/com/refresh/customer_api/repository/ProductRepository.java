@@ -1,12 +1,10 @@
 package com.refresh.customer_api.repository;
 
-import com.refresh.customer_api.dto.ProductResponse;
 import com.refresh.customer_api.dto.ProductSelectorResponse;
 import com.refresh.customer_api.entity.Product;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.NativeQuery;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -34,4 +32,11 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     List<Product> findForSelect();
 
     List<ProductSelectorResponse> findAllByOrderByNameDesc();
+
+    boolean existsByName(String name);
+    boolean existsByProductNumber(String productNumber);
+    //ini untuk update jadi cek duplikat dan cek id dia
+    boolean existsByNameAndIdNot(String name, Integer id);
+    boolean existsByProductNumberAndIdNot(String productNumber, Integer id);
+
 }

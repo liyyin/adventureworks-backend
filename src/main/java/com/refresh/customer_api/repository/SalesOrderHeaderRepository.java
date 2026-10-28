@@ -41,7 +41,7 @@ public interface SalesOrderHeaderRepository extends JpaRepository<SalesOrderHead
     Optional<SalesOrderHeader> findDetailOrderById(@Param("id")Integer id);
 
     @Query(value = """
-            SELECT 
+            SELECT
                 h.SalesOrderID AS id,
                 h.SalesOrderNumber AS salesOrderNumber,
                 h.OrderDate AS orderDate,
@@ -60,13 +60,13 @@ public interface SalesOrderHeaderRepository extends JpaRepository<SalesOrderHead
     Page<SalesOrderSummaryView> findSummaries(Pageable pageable);
 
     @Query(
-        value = """ 
+        value = """
                select new com.refresh.customer_api.dto.SalesOrderWithCustomerResponse(h.id,
                h.salesOrderNumber,
                h.orderDate,
                h.status,
                h.customerId,
-               case when p.id is null then null 
+               case when p.id is null then null
                     else concat(p.firstName, ' ', coalesce(concat(p.middleName, ' '), ''), p.lastName)
                end,
                s.name,
