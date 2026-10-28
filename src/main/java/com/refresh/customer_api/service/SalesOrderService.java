@@ -36,6 +36,15 @@ public class SalesOrderService {
         return SalesOrderDetailResponse.from(header,reasons);
     }
 
+    public SalesOrderDetailResponse getDetailById(Integer id){
+        SalesOrderHeader header = salesOrderHeaderRepository.findDetailOrderById(id)
+                .orElseThrow(()-> new ResourceNotFoundException("Sales Order",id));
+
+        List<String> reasons = salesOrderHeaderRepository.findSalesReasonNames(id);
+
+        return SalesOrderDetailResponse.from(header,reasons);
+    }
+
     public Page<SalesOrderWithCustomerResponse> listCustomerStore(Pageable pageable){
         return salesOrderHeaderRepository.findSummaries(pageable)
                 .map(SalesOrderWithCustomerResponse::from);
