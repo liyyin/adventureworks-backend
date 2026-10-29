@@ -19,6 +19,7 @@ public record SalesOrderDetailResponse(
         LocalDateTime dueDate,
         LocalDateTime shipDate,
         Integer status,
+        String statusLabel,
         Integer customerId,
         String personName,
         String storeName,
@@ -40,6 +41,7 @@ public record SalesOrderDetailResponse(
                 h.getDueDate(),
                 h.getShipDate(),
                 h.getStatus(),
+                h.getStatusEnum().getLabel(),
                 h.getCustomerId(),
                 person != null
                         ? joinName(person.getFirstName(), person.getMiddleName(), person.getLastName())

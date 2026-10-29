@@ -3,6 +3,7 @@ package com.refresh.customer_api.service;
 
 import com.refresh.customer_api.dto.*;
 import com.refresh.customer_api.entity.*;
+import com.refresh.customer_api.enums.SalesOrderStatus;
 import com.refresh.customer_api.exception.BadRequestException;
 import com.refresh.customer_api.exception.ConflictException;
 import com.refresh.customer_api.exception.ResourceNotFoundException;
@@ -81,21 +82,7 @@ public class SalesOrderService {
         Customer customer = customerRepository.findById(request.customerId()).orElseThrow(()-> new BadRequestException("Customer TIdak di temukan"));
 
         // ambil semua product
-        Set<Integer> productIds = request.items().stream()
-                .map(SalesOrderItemRequest::productId)
-                .collect(Collectors.toSet());
-
-        Map<Integer, Product> products = productRepository.findAllById(productIds).stream()
-                .collect(Collectors.toMap(Product::getId, p -> p));
-
-        // cek product yang tidak di temukan
-        List<Integer> missing = productIds.stream()
-                .filter(id-> !products.containsKey(id))
-                .sorted()
-                .toList();
-        if(!missing.isEmpty()){
-            throw new BadRequestException("Produk tidak ditemukan"+missing);
-        }
+        Map<Integer,Product> products = loadProduct(request.items());
 
         // cek sales reason(optional)
         Set<Integer> reasonIds = request.salesReasonIds() == null
@@ -118,7 +105,7 @@ public class SalesOrderService {
         header.setCustomer(customer);
         header.setOrderDate(now);
         header.setDueDate(request.dueDate());
-        header.setStatus(1);   // 1 = In process
+        header.changeStatus(SalesOrderStatus.IN_PROCESS);   // 1 = In process
         header.setBillToAddressId(request.billToAddressId());
         header.setShipToAddressId(request.shipToAddressId());
         header.setShipMethodId(request.shipMethodId());
@@ -126,21 +113,7 @@ public class SalesOrderService {
         header.setFreight(BigDecimal.ZERO);
 
         //Buat Item, Harga diambil dari database
-        BigDecimal subTotal = BigDecimal.ZERO;
-        for(SalesOrderItemRequest item: request.items()){
-            Product product = products.get(item.productId());
-
-            SalesOrderDetail detail = new SalesOrderDetail();
-            detail.setProduct(product);
-            detail.setOrderQty(item.orderQty());
-            detail.setUnitPrice(product.getListPrice());
-            detail.setUnitPriceDiscount(BigDecimal.ZERO);
-            detail.setSpecialOfferId(1);
-            header.addDetail(detail);
-
-            BigDecimal lineTotal = product.getListPrice().multiply(BigDecimal.valueOf(item.orderQty()));
-            subTotal =subTotal.add(lineTotal);
-        }
+        BigDecimal subTotal = addItems(header,request.items(),products);
         header.setSubTotal(subTotal);
 
         // 7. simpan header + item (cascade)
@@ -163,4 +136,120 @@ public class SalesOrderService {
         return getDetailById(newId);
     }
 
+    // Ambil semua produk dalam satu query, dan pastikan semuanya ada
+    private Map<Integer, Product> loadProduct(List<SalesOrderItemRequest> items){
+        Set<Integer> productIds = items.stream()
+                .map(SalesOrderItemRequest::productId)
+                .collect(Collectors.toSet());
+
+        Map<Integer,Product> products = productRepository.findAllById(productIds).stream()
+                .collect(Collectors.toMap(Product::getId,p->p));
+
+        List<Integer> missing = productIds.stream()
+                .filter(id -> !products.containsKey(id))
+                .sorted()
+                .toList();
+
+        if (!missing.isEmpty()){
+            throw new BadRequestException("Produk Tidak ditemukan "+ missing);
+        }
+
+        return products;
+    }
+
+    // Buat item dan tambahkan ke header, lalu kembalikan subtotal
+    private BigDecimal addItems(SalesOrderHeader header
+            ,List<SalesOrderItemRequest> items
+            ,Map<Integer,Product> products){
+        BigDecimal subTotal = BigDecimal.ZERO;
+        for (SalesOrderItemRequest item: items){
+            Product product = products.get(item.productId());
+
+            SalesOrderDetail detail = new SalesOrderDetail();
+            detail.setProduct(product);
+            detail.setOrderQty(item.orderQty());
+            detail.setUnitPrice(product.getListPrice());
+            detail.setUnitPriceDiscount(BigDecimal.ZERO);
+            detail.setSpecialOfferId(1);
+            header.addDetail(detail);
+
+            subTotal = subTotal.add(product.getListPrice().multiply(BigDecimal.valueOf(item.orderQty())));
+        }
+        return subTotal;
+    }
+
+    //Simpan perubahan ke database, lalu ambil ulang order yang lengkap
+    private SalesOrderDetailResponse flushAndReload(Integer id){
+        salesOrderHeaderRepository.flush();
+        entityManager.clear();
+        return getDetailById(id);
+    }
+
+    //ambil order cek aturan transisi, lalu ubah statusnya
+    private SalesOrderHeader transition(Integer id, SalesOrderStatus target){
+        SalesOrderHeader header = salesOrderHeaderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Sales Order",id));
+
+        SalesOrderStatus current = header.getStatusEnum();
+        if(!current.canTransitionTo(target)){
+            throw new ConflictException("Order " + header.getSalesOrderNumber()
+            + " berstatus " + current.getLabel()
+            + " dan tidak bisa diubah menjadi " + target.getLabel());
+        }
+        header.changeStatus(target);
+        return header;
+    }
+
+    @Transactional
+    public SalesOrderDetailResponse update(Integer id,SalesOrderUpdateRequest request){
+        SalesOrderHeader header =salesOrderHeaderRepository.findById(id)
+                .orElseThrow(()->new ResourceNotFoundException("Sales Order",id));
+
+        SalesOrderStatus status = header.getStatusEnum();
+
+        if (!status.isEditable()){
+            throw new ConflictException("Order " + header.getSalesOrderNumber()
+                    + " berstatus " + status.getLabel()
+                    + ". Hanya order berstatus In process yang bisa diubah.");
+        }
+
+        if (request.dueDate().isBefore(header.getOrderDate())){
+            throw new BadRequestException("Tanggal jatuh tempo tidak boleh sebelum tanggal order");
+        }
+
+        Map<Integer,Product> products = loadProduct(request.items());
+
+
+        try {
+            header.setDueDate(request.dueDate());
+
+            header.getDetails().clear();
+            salesOrderHeaderRepository.flush();
+            
+            header.setSubTotal(addItems(header,request.items(),products));
+            return flushAndReload(id);
+        }catch (DataIntegrityViolationException e){
+            log.warn("Gagal mengubah sales order {}: {}", id, e.getMostSpecificCause().getMessage());
+            throw new ConflictException("Sales order tidak bisa diubah. Periksa produk yang tidak tersedia untuk dijual.");
+        }
+    }
+
+    @Transactional
+    public SalesOrderDetailResponse approve(Integer id) {
+        transition(id, SalesOrderStatus.APPROVED);
+        return flushAndReload(id);
+    }
+
+    @Transactional
+    public SalesOrderDetailResponse ship(Integer id) {
+        SalesOrderHeader header = transition(id, SalesOrderStatus.SHIPPED);
+        header.setShipDate(LocalDateTime.now());
+        return flushAndReload(id);
+    }
+
+    @Transactional
+    public SalesOrderDetailResponse cancel(Integer id) {
+        transition(id, SalesOrderStatus.CANCELLED);
+        return flushAndReload(id);
+    }
 }

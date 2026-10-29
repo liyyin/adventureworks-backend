@@ -1,5 +1,6 @@
 package com.refresh.customer_api.entity;
 
+import com.refresh.customer_api.enums.SalesOrderStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -72,5 +73,13 @@ public class SalesOrderHeader {
     public void addDetail(SalesOrderDetail detail) {
         details.add(detail);
         detail.setSalesOrder(this);
+    }
+
+    public SalesOrderStatus getStatusEnum(){
+        return SalesOrderStatus.fromCode(status);
+    }
+
+    public void changeStatus(SalesOrderStatus newStatus){
+        this.status = newStatus.getCode();
     }
 }
