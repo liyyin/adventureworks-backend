@@ -1,9 +1,6 @@
 package com.refresh.customer_api.controller;
 
-import com.refresh.customer_api.dto.SalesOrderCreateRequest;
-import com.refresh.customer_api.dto.SalesOrderDetailResponse;
-import com.refresh.customer_api.dto.SalesOrderSummaryResponse;
-import com.refresh.customer_api.dto.SalesOrderWithCustomerResponse;
+import com.refresh.customer_api.dto.*;
 import com.refresh.customer_api.service.SalesOrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -65,5 +62,30 @@ public class SalesOrderController {
                 .buildAndExpand(created.id())
                 .toUri();
         return ResponseEntity.created(location).body(created);
+    }
+
+    @Operation(summary = "Ubah sales order (hanya status In process)")
+    @PutMapping("/{id}")
+    public SalesOrderDetailResponse update(@PathVariable Integer id,
+                                           @Valid @RequestBody SalesOrderUpdateRequest request) {
+        return salesOrderService.update(id, request);
+    }
+
+    @Operation(summary = "Setujui sales order")
+    @PostMapping("/{id}/approve")
+    public SalesOrderDetailResponse approve(@PathVariable Integer id) {
+        return salesOrderService.approve(id);
+    }
+
+    @Operation(summary = "Kirim sales order")
+    @PostMapping("/{id}/ship")
+    public SalesOrderDetailResponse ship(@PathVariable Integer id) {
+        return salesOrderService.ship(id);
+    }
+
+    @Operation(summary = "Batalkan sales order")
+    @PostMapping("/{id}/cancel")
+    public SalesOrderDetailResponse cancel(@PathVariable Integer id) {
+        return salesOrderService.cancel(id);
     }
 }
