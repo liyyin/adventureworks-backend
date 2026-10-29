@@ -34,3 +34,6 @@ build/
 
 ### Rahasia ###
 .env
+
+### Logs ###
+logs/
